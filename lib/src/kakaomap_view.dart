@@ -53,16 +53,16 @@ class KakaoMapView extends StatelessWidget {
   final String? customOverlay;
 
   /// Marker tap event
-  final void Function(JavascriptMessage)? onTapMarker;
+  final void Function(JavaScriptMessage)? onTapMarker;
 
   /// Zoom change event
-  final void Function(JavascriptMessage)? zoomChanged;
+  final void Function(JavaScriptMessage)? zoomChanged;
 
   /// When user stop moving camera, this event will occur
-  final void Function(JavascriptMessage)? cameraIdle;
+  final void Function(JavaScriptMessage)? cameraIdle;
 
   /// North East, South West lat, lang will be updated when the move event is occurred
-  final void Function(JavascriptMessage)? boundaryUpdate;
+  final void Function(JavaScriptMessage)? boundaryUpdate;
 
   /// [KakaoFigure] is required [KakaoFigure.path] to make polygon.
   /// If null, it won't be enabled
@@ -118,47 +118,70 @@ class KakaoMapView extends StatelessWidget {
       key: mapWidgetKey,
       height: height,
       width: width,
-      child: WebView(
-        initialUrl: (customScript == null) ? _getHTML() : _customScriptHTML(),
-        onWebViewCreated: mapController,
-        javascriptMode: JavascriptMode.unrestricted,
-        javascriptChannels: _getChannels,
-        debuggingEnabled: true,
-        gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
-          Factory(() => EagerGestureRecognizer()),
-        ].toSet(),
+      child: WebViewWidget(
+        controller: WebViewController()
+          ..setJavaScriptMode(JavaScriptMode.unrestricted)
+          ..setBackgroundColor(const Color(0x00000000))
+          ..setNavigationDelegate(
+            NavigationDelegate(
+              onProgress: (int progress) {
+                // Update loading bar.
+              },
+              onPageStarted: (String url) {},
+              onPageFinished: (String url) {},
+              onWebResourceError: (WebResourceError error) {},
+            ),
+          )
+          ..loadHtmlString(
+              (customScript == null) ? _getHTML() : _customScriptHTML())
+          ..addJavaScriptChannel(
+            'onTapMarker',
+            onMessageReceived: onTapMarker ?? (JavaScriptMessage message) {},
+          )
+          ..addJavaScriptChannel(
+            'zoomChanged',
+            onMessageReceived: zoomChanged ?? (JavaScriptMessage message) {},
+          )
+          ..addJavaScriptChannel(
+            'cameraIdle',
+            onMessageReceived: cameraIdle ?? (JavaScriptMessage message) {},
+          )
+          ..addJavaScriptChannel(
+            'boundaryUpdate',
+            onMessageReceived: boundaryUpdate ?? (JavaScriptMessage message) {},
+          ),
       ),
     );
   }
 
-  Set<JavascriptChannel>? get _getChannels {
-    Set<JavascriptChannel>? channels = {};
-    if (onTapMarker != null) {
-      channels.add(JavascriptChannel(
-          name: 'onTapMarker', onMessageReceived: onTapMarker!));
-    }
+  // Set<JavascriptChannel>? get _getChannels {
+  //   Set<JavascriptChannel>? channels = {};
+  //   if (onTapMarker != null) {
+  //     channels.add(JavascriptChannel(
+  //         name: 'onTapMarker', onMessageReceived: onTapMarker!));
+  //   }
 
-    if (zoomChanged != null) {
-      channels.add(JavascriptChannel(
-          name: 'zoomChanged', onMessageReceived: zoomChanged!));
-    }
+  //   if (zoomChanged != null) {
+  //     channels.add(JavascriptChannel(
+  //         name: 'zoomChanged', onMessageReceived: zoomChanged!));
+  //   }
 
-    if (cameraIdle != null) {
-      channels.add(JavascriptChannel(
-          name: 'cameraIdle', onMessageReceived: cameraIdle!));
-    }
+  //   if (cameraIdle != null) {
+  //     channels.add(JavascriptChannel(
+  //         name: 'cameraIdle', onMessageReceived: cameraIdle!));
+  //   }
 
-    if (boundaryUpdate != null) {
-      channels.add(JavascriptChannel(
-          name: 'boundaryUpdate', onMessageReceived: boundaryUpdate!));
-    }
+  //   if (boundaryUpdate != null) {
+  //     channels.add(JavascriptChannel(
+  //         name: 'boundaryUpdate', onMessageReceived: boundaryUpdate!));
+  //   }
 
-    if (channels.isEmpty) {
-      return null;
-    }
+  //   if (channels.isEmpty) {
+  //     return null;
+  //   }
 
-    return channels;
-  }
+  //   return channels;
+  // }
 
   String _getHTML() {
     String markerImageOption = '';
